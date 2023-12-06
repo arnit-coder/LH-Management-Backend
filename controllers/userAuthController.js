@@ -36,6 +36,8 @@ secretKey = 'your-secret-key'
     res.cookie('jwt', token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite: 'none',
+      secure:true
     });
 
     res.status(201).json({ message: 'Signup successful', user: { email: newUser.email, role: newUser.role } });
@@ -73,6 +75,8 @@ module.exports.login = async (req, res) => {
     res.cookie('jwt', token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite:'none',
+      secure:true
     });
 
     // Set user data in the session (if using session)
@@ -92,6 +96,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
   // Clear the JWT cookie
-  res.clearCookie('jwt');
+  res.clearCookie('jwt',{sameSite:'none',
+  secure:true});
   res.json({ message: 'Logout successful' });
 };

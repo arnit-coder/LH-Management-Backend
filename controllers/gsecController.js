@@ -1,7 +1,7 @@
 const express = require("express");
 const Gsec = require("../models/gsec");
 const Booking = require("../models/Booking");
-const User = require('../models/user')
+const User = require("../models/user");
 module.exports.makeRequest = async (req, res) => {
   try {
     const {
@@ -15,18 +15,10 @@ module.exports.makeRequest = async (req, res) => {
       facultyMentorEmail,
       startTime,
       endTime,
+      pdf,
     } = req.body;
     const query = {
       ltNumber,
-      // assistantRegistrarStatus: 'approved',
-      // facultyStatus: 'approved',
-      //   $or: [
-      //       { avSupport: 'no' }, // When avSupport is 'no', systemAdministratorStatus won't be considered
-      //       {
-      //           avSupport: 'yes',
-      //           systemAdministratorStatus: 'approved'
-      //       }
-      //   ],
       $or: [
         {
           $and: [
@@ -57,11 +49,17 @@ module.exports.makeRequest = async (req, res) => {
           msg: `LT Already Booked by ${existingBooking.clubName}`,
           success: false,
         });
+      } else if (
+        existingBooking.facultyStatus === "pending" ||
+        existingBooking.assistantRegistrarStatus === "pending" ||
+        (existingBooking.systemAdministratorStatus === "pending" &&
+          existingBooking.avSupport === "yes")
+      ) {
+        return res.status(200).json({
+          msg: `LT Already Requested by ${existingBooking.clubName}`,
+          success: false,
+        });
       }
-      return res.status(200).json({
-        msg: `LT Already Requested by ${existingBooking.clubName}`,
-        success: false,
-      });
     }
 
     const newBooking = await Booking.create({
@@ -75,6 +73,7 @@ module.exports.makeRequest = async (req, res) => {
       avSupport,
       facultyMentorEmail,
       clubName,
+      pdf
     });
 
     await newBooking.save();
@@ -93,7 +92,7 @@ module.exports.getAllRequestsByMe = async (req, res) => {
   try {
     const id = req.query.id;
     const findGsecUser = await User.findById(id);
-    console.log(findGsecUser)
+    console.log(findGsecUser);
     if (!findGsecUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -140,7 +139,7 @@ module.exports.getAllRequestsByMe = async (req, res) => {
       ],
     };
     // console.log(query1)
-    
+
     const query3 = {
       $and: [
         { bookedBy: findGsecUser.email },
@@ -158,13 +157,15 @@ module.exports.getAllRequestsByMe = async (req, res) => {
         },
       ],
     };
-    
+
     const pendingRequests = await Booking.find(query2);
     const approvedRequests = await Booking.find(query1);
     const rejectedRequests = await Booking.find(query3);
     res.status(200).json({
       message: "successfully fetched all approved requests",
-      pendingRequests,approvedRequests,rejectedRequests
+      pendingRequests,
+      approvedRequests,
+      rejectedRequests,
     });
     // const findAvSupport = await Booking.find({ avSupport: "yes" });
     // if (findAvSupport) {
@@ -178,7 +179,7 @@ module.exports.getAllRequestsByMe = async (req, res) => {
     //     ],
     //   };
     //   const ltBookings = await Booking.find(query).populate("gsecId");
-      
+
     // } else {
     //   const query = {
     //     $and: [
